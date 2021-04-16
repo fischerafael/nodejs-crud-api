@@ -1,4 +1,5 @@
 require("dotenv/config");
+
 const { app } = require("./external/app");
 const { PORT } = require("./external/app/constants");
 
