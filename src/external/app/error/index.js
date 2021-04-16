@@ -9,7 +9,12 @@ function errorHandler(error, request, response, next) {
     return response.status(400).json({ message: error.message });
   if (error.message === "Email should be at least 6 characters long")
     return response.status(400).json({ message: error.message });
-  return response.status(500).json({ message: "Internal server error" });
+  if (error.message === "Not found")
+    return response.status(404).json({ message: error.message });
+  if (error.message === "Unauthorized")
+    return response.status(401).json({ message: error.message });
+
+  return response.status(500).json({ message: error.message });
 }
 
 module.exports = {

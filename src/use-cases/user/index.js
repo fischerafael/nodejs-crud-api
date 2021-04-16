@@ -1,4 +1,5 @@
 const { user } = require("../../entities/user");
+
 const User = require("../../external/database/User");
 
 const userService = {
@@ -18,7 +19,50 @@ const userService = {
     const savedUser = await User.create(userData);
 
     return {
-      savedUser,
+      data: savedUser,
+    };
+  },
+
+  async find({ query }) {
+    const { limit, page } = query;
+
+    const users = await User.find()
+      .limit(+limit)
+      .skip(+limit * (+page - 1));
+
+    const sanitizedUsers = users.map((user) => {
+      return { _id: user.id, email: user.email, birthYear: user.birthYear };
+    });
+
+    return {
+      data: sanitizedUsers,
+    };
+  },
+
+  async findOne({ userId }) {
+    const user = await User.findById(userId);
+    if (!user) throw new Error("Not found");
+
+    const sanitizedUser = {
+      _id: user._id,
+      email: user.email,
+      birthYear: user.birthYear,
+      isPremium: user.isPremium,
+    };
+
+    return {
+      data: sanitizedUser,
+    };
+  },
+
+  async delete({ userId, authorization }) {
+    if (userId !== authorization) throw new Error("Unauthorized");
+
+    const deletedUser = await User.findByIdAndRemove(userId);
+    if (!deletedUser) throw new Error("Not found");
+
+    return {
+      data: deletedUser,
     };
   },
 };
