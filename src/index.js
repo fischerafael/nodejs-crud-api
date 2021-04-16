@@ -1,4 +1,5 @@
 require("dotenv/config");
 const { app } = require("./external/app");
+const { PORT } = require("./external/app/constants");
 
-app.listen(3333, () => console.log("Server is running"));
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
