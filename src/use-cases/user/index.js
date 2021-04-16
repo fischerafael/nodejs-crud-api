@@ -1,6 +1,5 @@
+const { userRepository } = require("../../adapters/repositories/user");
 const { user } = require("../../entities/user");
-
-const User = require("../../external/database/User");
 
 const userService = {
   async create({ body }) {
@@ -8,27 +7,31 @@ const userService = {
     if (!email || !username || !password || !birthYear || !isPremium)
       throw new Error("Missing params");
 
-    const hasEmail = await User.findOne({ email: body.email });
+    const { user: hasEmail } = await userRepository.findOne({
+      key: "email",
+      value: email,
+    });
     if (hasEmail) throw new Error("Email already being used");
 
-    const hasUsername = await User.findOne({ username: body.username });
+    const { user: hasUsername } = await userRepository.findOne({
+      key: "username",
+      value: username,
+    });
     if (hasUsername) throw new Error("Username already being used");
 
-    const userData = user.create(body);
+    const userData = user.validate(body);
 
-    const savedUser = await User.create(userData);
+    const { createdUser } = await userRepository.create(userData);
 
     return {
-      data: savedUser,
+      data: createdUser,
     };
   },
 
   async find({ query }) {
     const { limit, page } = query;
 
-    const users = await User.find()
-      .limit(+limit)
-      .skip(+limit * (+page - 1));
+    const { users } = await userRepository.find({ limit, page });
 
     const sanitizedUsers = users.map((user) => {
       return { _id: user.id, email: user.email, birthYear: user.birthYear };
@@ -40,7 +43,7 @@ const userService = {
   },
 
   async findOne({ userId }) {
-    const user = await User.findById(userId);
+    const { user } = await userRepository.findById(userId);
     if (!user) throw new Error("Not found");
 
     const sanitizedUser = {
@@ -55,10 +58,66 @@ const userService = {
     };
   },
 
+  async update({ userId, body }) {
+    const { user: hasEmail } = await userRepository.findOne({
+      key: "email",
+      value: body.email,
+    });
+    if (hasEmail) throw new Error("Email already being used");
+
+    const { user: hasUsername } = await userRepository.findOne({
+      key: "username",
+      value: body.username,
+    });
+    if (hasUsername) throw new Error("Username already being used");
+
+    const validUserData = user.validate(body);
+
+    const { user: updatedUser } = await userRepository.findByIdAndUpdate(
+      userId,
+      validUserData
+    );
+    if (!updatedUser) throw new Error("Not found");
+
+    return {
+      data: updatedUser,
+    };
+  },
+
+  async replace({ userId, body }) {
+    const { email, username, password, birthYear, isPremium } = body;
+    if (!email || !username || !password || !birthYear || !isPremium)
+      throw new Error("Missing params");
+
+    const { user: hasEmail } = await userRepository.findOne({
+      key: "email",
+      value: body.email,
+    });
+    if (hasEmail) throw new Error("Email already being used");
+
+    const { user: hasUsername } = await userRepository.findOne({
+      key: "username",
+      value: body.username,
+    });
+    if (hasUsername) throw new Error("Username already being used");
+
+    const validUserData = user.validate(body);
+
+    const { user: updatedUser } = await userRepository.findByIdAndUpdate(
+      userId,
+      validUserData
+    );
+    if (!updatedUser) throw new Error("Not found");
+
+    return {
+      data: updatedUser,
+    };
+  },
+
   async delete({ userId, authorization }) {
     if (userId !== authorization) throw new Error("Unauthorized");
 
-    const deletedUser = await User.findByIdAndRemove(userId);
+    const { deletedUser } = await userRepository.findByIdAndRemove(userId);
     if (!deletedUser) throw new Error("Not found");
 
     return {
